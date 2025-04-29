@@ -1,0 +1,315 @@
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
+import math
+import random
+
+# Camera-related variables
+camera_pos = (0,500,500)
+
+fovY = 120  # Field of view
+GRID_LENGTH = 92  # Length of grid lines
+rand_var = 423
+first_person = False
+
+
+
+game_over = False
+player_life = 5
+game_score = 0
+
+class Player:
+    global_x = 0
+    global_y = 0
+    global_z = 0
+    global_angle = 0
+    rotatex = 0
+    angle_rad = math.radians(global_angle)
+    movement = True
+    cam_x = global_x
+    cam_y = global_y+40
+    cam_z = 100  
+
+    center_x = cam_x + 100
+    center_y = cam_y + 100
+    center_z = 100
+    def __init__(self):
+         self.xposition = 0
+         self.yposition = 0
+    def draw_player(self):
+        glPushMatrix()
+        #For movement
+        glTranslatef(self.global_x, self.global_y, 0) 
+        glRotatef(self.global_angle, 0, 0, 1)
+        glRotatef(self.rotatex, 1, 0, 0)
+        #Drawing the cube
+        glColor3f(0, 0.5, 0.5)
+        glTranslatef(self.xposition, self.yposition, 40)  #x,y,z
+        glutSolidCube(60)
+        #Drawing the legs
+        glColor3f(0, 0, 1)
+        glTranslatef(self.xposition+20, 0, -40) 
+        gluCylinder(gluNewQuadric(), 5, 10, 40, 10, 10)  # parameters are: quadric, base radius, top radius, height, slices, stacks
+        glTranslatef(self.xposition-40, 0, 0) 
+        gluCylinder(gluNewQuadric(), 5, 10, 40, 10, 10)
+        #Drawing the hands
+        glColor3f(1, 0.9, 0.7)
+        glTranslatef(self.xposition+40, 0, 70) 
+        glRotatef(-90, 1, 0, 0)
+        gluCylinder(gluNewQuadric(), 10, 5, 20, 10, 10)
+        glTranslatef(self.xposition-40, 0, 0)
+        gluCylinder(gluNewQuadric(), 10, 5, 20, 10, 10)
+        #Drawing the sword
+        #Drawing the head
+        glColor3f(0, 0, 0)
+        glRotatef(90, 1, 0, 0)
+        glTranslatef(self.xposition+20, 0, 20)
+        gluSphere(gluNewQuadric(), 15, 10, 10)
+        glPopMatrix()
+
+
+
+def player_lie_down():
+    Player.rotatex = 90
+
+
+def draw_text(x, y, text, font=GLUT_BITMAP_HELVETICA_18):
+    glColor3f(1,1,1)
+    glMatrixMode(GL_PROJECTION)
+    glPushMatrix()
+    glLoadIdentity()
+    
+    # Set up an orthographic projection that matches window coordinates
+    gluOrtho2D(0, 1000, 0, 800)  # left, right, bottom, top
+
+    
+    glMatrixMode(GL_MODELVIEW)
+    glPushMatrix()
+    glLoadIdentity()
+    
+    # Draw text at (x, y) in screen coordinates
+    glRasterPos2f(x, y)
+    for ch in text:
+        glutBitmapCharacter(font, ord(ch))
+    
+    # Restore original projection and modelview matrices
+    glPopMatrix()
+    glMatrixMode(GL_PROJECTION)
+    glPopMatrix()
+    glMatrixMode(GL_MODELVIEW)
+
+
+def keyboardListener(key, x, y):
+    """
+    Handles keyboard inputs for player movement, gun rotation, camera updates, and cheat mode toggles.
+    """
+    # Rotate gun left (A key)
+    if key == b'a':
+        Player.global_angle+=20
+        Player.angle_rad = math.radians(Player.global_angle)
+        Player.cam_x = Player.global_x
+        Player.cam_y = Player.global_y+40
+        Player.cam_z = 100  
+
+        Player.center_x = Player.cam_x + 100
+        Player.center_y = Player.cam_y + 100
+        Player.center_z = 100
+    # Rotate gun right (D key)
+    if key == b'd':
+        Player.global_angle-=20
+        Player.angle_rad = math.radians(Player.global_angle)
+        Player.cam_x = Player.global_x
+        Player.cam_y = Player.global_y+40
+        Player.cam_z = 100  
+
+        Player.center_x = Player.cam_x + 100
+        Player.center_y = Player.cam_y + 100
+        Player.center_z = 100
+
+
+
+def specialKeyListener(key, x, y):
+    """
+    Handles special key inputs (arrow keys) for adjusting the camera angle and height.
+    """
+    global camera_pos
+    x, y, z = camera_pos
+    # Move camera up (UP arrow key)
+    if key == GLUT_KEY_UP:
+         z += 5
+
+    # Move camera down (DOWN arrow key)
+    if key == GLUT_KEY_DOWN:
+        z -= 5
+    # moving camera left (LEFT arrow key)
+    if key == GLUT_KEY_LEFT:
+        x -= 5  # Small angle decrement for smooth movement
+
+    # moving camera right (RIGHT arrow key)
+    if key == GLUT_KEY_RIGHT:
+        x += 5 # Small angle increment for smooth movement
+
+    camera_pos = (x, y, z)
+
+
+def mouseListener(button, state, x, y):
+    global first_person
+    """
+    Handles mouse inputs for firing bullets (left click) and toggling camera mode (right click).
+    """
+    if button == GLUT_RIGHT_BUTTON and state == GLUT_DOWN:
+        first_person = not first_person
+
+
+def setupCamera():
+    global first_person
+    glMatrixMode(GL_PROJECTION)  # Switch to projection matrix mode
+    glLoadIdentity()  # Reset the projection matrix
+    # Set up a perspective projection (field of view, aspect ratio, near clip, far clip)
+    gluPerspective(fovY, 1.25, 0.1, 1500) # Think why aspect ration is 1.25?
+    glMatrixMode(GL_MODELVIEW)  # Switch to model-view matrix mode
+    glLoadIdentity()  # Reset the model-view matrix
+    if first_person:
+        Player.cam_x = Player.global_x
+        Player.cam_y = Player.global_y+40
+        Player.cam_z = 0  
+
+        Player.center_x = Player.cam_x + math.sin(Player.angle_rad) * 100  # The camera will look forward from the player
+        Player.center_y = Player.cam_y  # Keep the same height
+        Player.center_z = Player.cam_z - math.cos(Player.angle_rad) * 100  # The camera will look forward along the z-axis
+
+        gluLookAt(Player.cam_x, Player.cam_y, Player.cam_z,
+                  Player.center_x, Player.center_y, Player.center_z,
+                  0, 1, 0)  # The up-vector (positive Y-axis) is aligned with the world up
+    else:
+        # Extract camera position and look-at target
+        x, y, z = camera_pos
+        # Position the camera and set its orientation
+        gluLookAt(x, y, z,  # Camera position
+                0, 0, 0,  # Look-at target
+                0, 0, 1)  # Up vector (z-axis)
+
+
+def idle():
+    glutPostRedisplay()
+
+
+def draw_grid():
+    global GRID_LENGTH
+    y = -600
+    x = 600
+    count = 0
+    for j in range(1,14):
+        for i in range(1,14):
+            if i%13 == 0:
+                if count%2 == 0:
+                        glBegin(GL_QUAD_STRIP)
+                        glColor3f(1, 1, 1)
+                        glVertex3f(x, y, 0)
+                        glVertex3f(x, y+GRID_LENGTH, 0)
+                        glVertex3f(x-GRID_LENGTH, y, 0)
+                        glVertex3f(x-GRID_LENGTH, y+GRID_LENGTH, 0)
+                        glEnd()
+                else:
+                        glBegin(GL_QUAD_STRIP)
+                        glColor3f(0.7, 0.5, 0.95)
+                        glVertex3f(x, y, 0)
+                        glVertex3f(x, y+GRID_LENGTH, 0)
+                        glVertex3f(x-GRID_LENGTH, y, 0)
+                        glVertex3f(x-GRID_LENGTH, y+GRID_LENGTH, 0)
+                        glEnd()
+                x = 600
+                y += GRID_LENGTH
+                count+=1
+            else:
+                if count%2 == 0:
+                        glBegin(GL_QUAD_STRIP)
+                        glColor3f(1, 1, 1)
+                        glVertex3f(x, y, 0)
+                        glVertex3f(x, y+GRID_LENGTH, 0)
+                        glVertex3f(x-GRID_LENGTH, y, 0)
+                        glVertex3f(x-GRID_LENGTH, y+GRID_LENGTH, 0)
+                        glEnd()
+                else:
+                        glBegin(GL_QUAD_STRIP)
+                        glColor3f(0.7, 0.5, 0.95)
+                        glVertex3f(x, y, 0)
+                        glVertex3f(x, y+GRID_LENGTH, 0)
+                        glVertex3f(x-GRID_LENGTH, y, 0)
+                        glVertex3f(x-GRID_LENGTH, y+GRID_LENGTH, 0)
+                        glEnd()
+                x-=GRID_LENGTH
+                count+=1
+        
+def draw_walls():
+    glBegin(GL_QUAD_STRIP)
+    glColor3f(0, 0, 1)
+    glVertex3f(600, -600, 0)
+    glVertex3f(600, -600, 100)
+    glVertex3f(600, 596, 0)
+    glVertex3f(600, 596, 100)
+    glEnd()
+
+    glBegin(GL_QUAD_STRIP)
+    glColor3f(0.5, 1, 1)
+    glVertex3f(600, -600, 0)
+    glVertex3f(600, -600, 100)
+    glVertex3f(-596, -600, 0)
+    glVertex3f(-596, -600, 100)
+    glEnd()
+
+    glBegin(GL_QUAD_STRIP)
+    glColor3f(0, 1, 0)
+    glVertex3f(-596, -600, 0)
+    glVertex3f(-596, -600, 100)
+    glVertex3f(-596, 596, 0)
+    glVertex3f(-596, 596, 100)
+    glEnd()
+
+    glBegin(GL_QUAD_STRIP)
+    glColor3f(1, 1, 1)
+    glVertex3f(-596, 596, 0)
+    glVertex3f(-596, 596, 100)
+    glVertex3f(600, 596, 0)
+    glVertex3f(600, 596, 100)
+    glEnd()
+
+def showScreen():
+    """
+    Display function to render the game scene:
+    - Clears the screen and sets up the camera.
+    - Draws everything of the screen
+    """
+    # Clear color and depth buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glLoadIdentity()  # Reset modelview matrix
+    glViewport(0, 0, 1000, 800)  # Set viewport size
+
+    setupCamera()  # Configure camera perspective
+    draw_grid()
+    draw_walls()
+    player = Player()
+    player.draw_player()
+
+    # Swap buffers for smooth rendering (double buffering)
+    glutSwapBuffers()
+
+
+# Main function to set up OpenGL window and loop
+def main():
+    glutInit()
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)  # Double buffering, RGB color, depth test
+    glutInitWindowSize(1000, 800)  # Window size
+    glutInitWindowPosition(0, 0)  # Window position
+    wind = glutCreateWindow(b"3D OpenGL Intro")  # Create the window
+
+    glutDisplayFunc(showScreen)  # Register display function
+    glutKeyboardFunc(keyboardListener)  # Register keyboard listener
+    glutSpecialFunc(specialKeyListener)
+    glutMouseFunc(mouseListener)
+    glutIdleFunc(idle) 
+
+    glutMainLoop()  # Enter the GLUT main loop
+
+if __name__ == "__main__":
+    main()
