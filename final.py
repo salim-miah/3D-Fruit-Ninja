@@ -26,13 +26,13 @@ class Player:
     rotatex = 0
     angle_rad = math.radians(global_angle)
     movement = True
-    cam_x = global_x
-    cam_y = global_y+40
-    cam_z = 100  
+    cam_x = global_x 
+    cam_y = global_y 
+    cam_z = 100
 
-    center_x = cam_x + 100
-    center_y = cam_y + 100
-    center_z = 100
+    center_x = cam_x - math.sin(angle_rad) * 100  
+    center_y = cam_y + math.cos(angle_rad) * 100  
+    center_z = cam_z  
     def __init__(self):
          self.xposition = 0
          self.yposition = 0
@@ -56,9 +56,9 @@ class Player:
         glColor3f(1, 0.9, 0.7)
         glTranslatef(self.xposition+40, 0, 70) 
         glRotatef(-90, 1, 0, 0)
-        gluCylinder(gluNewQuadric(), 10, 5, 20, 10, 10)
+        gluCylinder(gluNewQuadric(), 10, 5, 70, 10, 10)
         glTranslatef(self.xposition-40, 0, 0)
-        gluCylinder(gluNewQuadric(), 10, 5, 20, 10, 10)
+        gluCylinder(gluNewQuadric(), 10, 5, 70, 10, 10)
         #Drawing the sword
         #Drawing the head
         glColor3f(0, 0, 0)
@@ -107,24 +107,28 @@ def keyboardListener(key, x, y):
     if key == b'a':
         Player.global_angle+=20
         Player.angle_rad = math.radians(Player.global_angle)
-        Player.cam_x = Player.global_x
-        Player.cam_y = Player.global_y+40
-        Player.cam_z = 100  
+        Player.cam_x = Player.global_x 
+        if (Player.global_angle%360 >= 90 and Player.global_angle%360 <= 270) or (Player.global_angle%360 >= -90 and Player.global_angle%360 <= -270):
+            Player.cam_y = Player.global_y - 20
+        else:
+            Player.cam_y = Player.global_y + 20
 
-        Player.center_x = Player.cam_x + 100
-        Player.center_y = Player.cam_y + 100
-        Player.center_z = 100
+        Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
+        Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
+        Player.center_z = Player.cam_z  
     # Rotate gun right (D key)
     if key == b'd':
         Player.global_angle-=20
         Player.angle_rad = math.radians(Player.global_angle)
         Player.cam_x = Player.global_x
-        Player.cam_y = Player.global_y+40
-        Player.cam_z = 100  
+        if (Player.global_angle%360 >= 90 and Player.global_angle%360 <= 270) or (Player.global_angle%360 >= -90 and Player.global_angle%360 <= -270):
+            Player.cam_y = Player.global_y - 20
+        else:
+            Player.cam_y = Player.global_y + 20 
 
-        Player.center_x = Player.cam_x + 100
-        Player.center_y = Player.cam_y + 100
-        Player.center_z = 100
+        Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
+        Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
+        Player.center_z = Player.cam_z  
 
 
 
@@ -170,17 +174,16 @@ def setupCamera():
     glMatrixMode(GL_MODELVIEW)  # Switch to model-view matrix mode
     glLoadIdentity()  # Reset the model-view matrix
     if first_person:
-        Player.cam_x = Player.global_x
-        Player.cam_y = Player.global_y+40
-        Player.cam_z = 0  
 
-        Player.center_x = Player.cam_x + math.sin(Player.angle_rad) * 100  # The camera will look forward from the player
-        Player.center_y = Player.cam_y  # Keep the same height
-        Player.center_z = Player.cam_z - math.cos(Player.angle_rad) * 100  # The camera will look forward along the z-axis
+        Player.cam_z = Player.global_z + 100
+    
+        Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
+        Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
+        Player.center_z = Player.cam_z  
 
         gluLookAt(Player.cam_x, Player.cam_y, Player.cam_z,
                   Player.center_x, Player.center_y, Player.center_z,
-                  0, 1, 0)  # The up-vector (positive Y-axis) is aligned with the world up
+                  0, 0, 1)  # The up-vector (positive Z-axis) is aligned with the world up
     else:
         # Extract camera position and look-at target
         x, y, z = camera_pos
@@ -301,7 +304,7 @@ def main():
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)  # Double buffering, RGB color, depth test
     glutInitWindowSize(1000, 800)  # Window size
     glutInitWindowPosition(0, 0)  # Window position
-    wind = glutCreateWindow(b"3D OpenGL Intro")  # Create the window
+    wind = glutCreateWindow(b"3D Ninja Turtle")  # Create the window
 
     glutDisplayFunc(showScreen)  # Register display function
     glutKeyboardFunc(keyboardListener)  # Register keyboard listener
