@@ -94,6 +94,198 @@ class Sword:
         glPopMatrix()
 
 
+class Fruit:
+    fruits = [
+        {"shape": "sphere", "color": (1, 0, 0), "hardness": 1, "points": 10},
+        {"shape": "sphere", "color": (0, 1, 0), "hardness": 2, "points": 20},
+        {"shape": "sphere", "color": (1, 1, 0), "hardness": 3, "points": 30},
+        {"shape": "cube", "color": (1, 0.5, 0), "hardness": 4, "points": 40},
+        {"shape": "bomb", "color": (0, 0, 0), "hardness": 10, "points": -1}
+    ]
+    
+    active_fruits = []
+    max_fruits = 4
+    can_spawn = True
+    sword_range = 100
+    
+    @staticmethod
+    def spawn_fruit():
+        if len(Fruit.active_fruits) < Fruit.max_fruits and Fruit.can_spawn:
+            angle = Player.angle_rad
+            distance = random.uniform(50, Fruit.sword_range)
+            offset = random.uniform(-40, 40)
+            
+
+            x = Player.global_x - math.sin(angle) * distance + math.cos(angle) * offset
+            y = Player.global_y + math.cos(angle) * distance + math.sin(angle) * offset
+            z = random.uniform(200, 400)
+            
+
+            vx = 0
+            vy = 0
+            vz = random.uniform(-1.5, -0.5)
+            
+            if random.random() < 0.15:
+                fruit_type = 4
+            else:
+                fruit_type = random.randint(0, 3)
+                
+            Fruit.active_fruits.append({
+                "type": fruit_type,
+                "x": x,
+                "y": y,
+                "z": z,
+                "vx": vx,
+                "vy": vy,
+                "vz": vz,
+                "sliced": False,
+                "slice_time": 0,
+                "halves": []
+            })
+            Fruit.can_spawn = False
+    
+    @staticmethod
+    def update_fruits(delta_time):
+        for fruit in Fruit.active_fruits[:]:
+            if not fruit["sliced"]:
+                fruit["z"] += fruit["vz"] * delta_time * 30
+                
+                if fruit["z"] < -50:
+                    Fruit.active_fruits.remove(fruit)
+                    Fruit.can_spawn = True
+                    if fruit["type"] != 4:
+                        global player_life
+                        player_life -= 1
+            else:
+                fruit["slice_time"] += delta_time
+                if fruit["slice_time"] > 1.5:
+                    Fruit.active_fruits.remove(fruit)
+                    Fruit.can_spawn = True
+                    continue
+                
+                for half in fruit["halves"]:
+                    half["x"] += half["vx"] * delta_time * 30
+                    half["y"] += half["vy"] * delta_time * 30
+                    half["z"] += half["vz"] * delta_time * 30
+        
+        Fruit.spawn_fruit()
+    
+    @staticmethod
+    def check_sword_collision():
+        global game_score, player_life, game_over
+        
+        if not (Sword.swinging_down or Sword.returning):
+            return
+            
+        sword_length = Fruit.sword_range
+        sword_width = 20
+        
+
+        sword_start = [
+            Player.global_x,
+            Player.global_y,
+            Player.global_z + 100
+        ]
+        
+        sword_angle_rad = math.radians(Sword.angle)
+        sword_end = [
+            sword_start[0] - math.sin(Player.angle_rad) * sword_length * math.cos(sword_angle_rad),
+            sword_start[1] + math.cos(Player.angle_rad) * sword_length * math.cos(sword_angle_rad),
+            sword_start[2] + sword_length * math.sin(sword_angle_rad)
+        ]
+        
+        for fruit in Fruit.active_fruits[:]:
+            if fruit["sliced"]:
+                continue
+                
+            fruit_pos = [fruit["x"], fruit["y"], fruit["z"]]
+            fruit_radius = 20
+
+            sword_vec = [
+                sword_end[0] - sword_start[0],
+                sword_end[1] - sword_start[1],
+                sword_end[2] - sword_start[2]
+            ]
+            
+            fruit_vec = [
+                fruit_pos[0] - sword_start[0],
+                fruit_pos[1] - sword_start[1],
+                fruit_pos[2] - sword_start[2]
+            ]
+            dot = sum(sword_vec[i]*fruit_vec[i] for i in range(3))
+            sword_len_sq = sum(sword_vec[i]**2 for i in range(3))
+            t = max(0, min(1, dot/sword_len_sq))
+            closest_point = [
+                sword_start[0] + t*sword_vec[0],
+                sword_start[1] + t*sword_vec[1],
+                sword_start[2] + t*sword_vec[2]
+            ]
+            distance = math.sqrt(sum((fruit_pos[i]-closest_point[i])**2 for i in range(3)))
+            if distance < (fruit_radius + sword_width):
+                fruit["sliced"] = True
+                direction = -1 if random.random() < 0.5 else 1
+                fruit["halves"] = [
+                    {
+                        "x": fruit["x"],
+                        "y": fruit["y"],
+                        "z": fruit["z"],
+                        "vx": random.uniform(3, 7) * direction,
+                        "vy": random.uniform(-3, 3),
+                        "vz": random.uniform(2, 5)
+                    },
+                    {
+                        "x": fruit["x"],
+                        "y": fruit["y"],
+                        "z": fruit["z"],
+                        "vx": random.uniform(3, 7) * -direction,
+                        "vy": random.uniform(-3, 3),
+                        "vz": random.uniform(2, 5)
+                    }
+                ]
+                
+                if fruit["type"] == 4:
+                    player_life -= 1
+                    if player_life <= 0:
+                        game_over = True
+                else:
+                    game_score += Fruit.fruits[fruit["type"]]["points"]
+    
+    @staticmethod
+    def draw_fruits():
+        for fruit in Fruit.active_fruits:
+            if not fruit["sliced"]:
+                glPushMatrix()
+                glTranslatef(fruit["x"], fruit["y"], fruit["z"])
+                fruit_type = Fruit.fruits[fruit["type"]]
+                glColor3f(*fruit_type["color"])
+                
+                if fruit_type["shape"] == "sphere":
+                    glutSolidSphere(20, 10, 10)
+                elif fruit_type["shape"] == "cube":
+                    glutSolidCube(35)
+                elif fruit_type["shape"] == "bomb":
+                    glutSolidSphere(22, 10, 10)
+                    glColor3f(0.5, 0.5, 0.5)
+                    glTranslatef(0, 0, 22)
+                    glutSolidCone(6, 12, 10, 10)
+                glPopMatrix()
+            else:
+                for i, half in enumerate(fruit["halves"]):
+                    glPushMatrix()
+                    glTranslatef(half["x"], half["y"], half["z"])
+                    fruit_type = Fruit.fruits[fruit["type"]]
+                    glColor3f(*fruit_type["color"])
+                    
+                    if fruit_type["shape"] == "sphere":
+                        glutSolidSphere(12, 10, 10)
+                    elif fruit_type["shape"] == "cube":
+                        glutSolidCube(20)
+                    elif fruit_type["shape"] == "bomb":
+                        glutSolidSphere(15, 10, 10)
+                        glColor3f(0.5, 0.5, 0.5)
+                        glTranslatef(0, 0, 15)
+                        glutSolidCone(4, 8, 10, 10)
+                    glPopMatrix()
 
 def player_lie_down():
     Player.rotatex = 90
@@ -338,6 +530,18 @@ def showScreen():
     draw_walls()
     player = Player()
     player.draw_player()
+
+    # Update and draw fruits
+    Fruit.update_fruits(0.016)
+    Fruit.check_sword_collision()
+    Fruit.draw_fruits()
+    
+    # Draw score and lives
+    draw_text(50, 750, f"Score: {game_score}")
+    draw_text(50, 720, f"Lives: {player_life}")
+    
+    if game_over:
+        draw_text(400, 400, "GAME OVER", GLUT_BITMAP_TIMES_ROMAN_24)
 
     # Swap buffers for smooth rendering (double buffering)
     glutSwapBuffers()
