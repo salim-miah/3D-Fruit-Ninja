@@ -3,6 +3,7 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import math
 import random
+import time
 
 # Camera-related variables
 camera_pos = (0,500,500)
@@ -29,7 +30,8 @@ class Player:
     cam_x = global_x 
     cam_y = global_y 
     cam_z = 100
-
+    costume_no = 0
+    costumes = [(54/255, 34/255, 4/255), (1, 0, 0), (1/255, 50/255, 32/255)]
     center_x = cam_x - math.sin(angle_rad) * 100  
     center_y = cam_y + math.cos(angle_rad) * 100  
     center_z = cam_z  
@@ -43,28 +45,52 @@ class Player:
         glRotatef(self.global_angle, 0, 0, 1)
         glRotatef(self.rotatex, 1, 0, 0)
         #Drawing the cube
-        glColor3f(0, 0.5, 0.5)
+        r,g,b = Player.costumes[Player.costume_no]
+        glColor3f(r,g,b)
         glTranslatef(self.xposition, self.yposition, 40)  #x,y,z
         glutSolidCube(60)
         #Drawing the legs
-        glColor3f(0, 0, 1)
+        glColor3f(0, 0, 0)
         glTranslatef(self.xposition+20, 0, -40) 
         gluCylinder(gluNewQuadric(), 5, 10, 40, 10, 10)  # parameters are: quadric, base radius, top radius, height, slices, stacks
         glTranslatef(self.xposition-40, 0, 0) 
         gluCylinder(gluNewQuadric(), 5, 10, 40, 10, 10)
-        #Drawing the hands
+        #Drawing the right hand
         glColor3f(1, 0.9, 0.7)
         glTranslatef(self.xposition+40, 0, 70) 
         glRotatef(-90, 1, 0, 0)
         gluCylinder(gluNewQuadric(), 10, 5, 70, 10, 10)
+        #Drawing the sword
+        Sword.draw_sword(70)
+        #Drawing the left hand
+        glColor3f(1, 0.9, 0.7)
         glTranslatef(self.xposition-40, 0, 0)
         gluCylinder(gluNewQuadric(), 10, 5, 70, 10, 10)
-        #Drawing the sword
         #Drawing the head
         glColor3f(0, 0, 0)
         glRotatef(90, 1, 0, 0)
         glTranslatef(self.xposition+20, 0, 20)
         gluSphere(gluNewQuadric(), 15, 10, 10)
+        glPopMatrix()
+
+
+
+class Sword:
+    angle = 90
+    swinging_down = False  
+    returning = False  
+    def __init__(self):
+        pass
+    @staticmethod
+    def draw_sword(z):
+        glPushMatrix()
+        glTranslatef(0, 0, z)  
+        glRotatef(Sword.angle, 1, 0, 0)
+        glColor3f(0.5, 0.2, 0.1)  # Sword handle color (brown)
+        gluCylinder(gluNewQuadric(), 3, 3, 10, 10, 10)  # Sword handle
+        glTranslatef(0, 0, 10) 
+        glColor3f(115/255, 117/255, 114/255)  # Sword blade color (gray)
+        gluCylinder(gluNewQuadric(), 2, 2, 50, 10, 10)  # Sword blade
         glPopMatrix()
 
 
@@ -130,6 +156,10 @@ def keyboardListener(key, x, y):
         Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
         Player.center_z = Player.cam_z  
 
+    #To change costumes
+    if key == b'c':
+        Player.costume_no = (Player.costume_no+1)%3
+
 
 
 def specialKeyListener(key, x, y):
@@ -164,6 +194,10 @@ def mouseListener(button, state, x, y):
     if button == GLUT_RIGHT_BUTTON and state == GLUT_DOWN:
         first_person = not first_person
 
+    if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
+        if not Sword.swinging_down and not Sword.returning:
+            Sword.swinging_down = True  
+
 
 def setupCamera():
     global first_person
@@ -194,6 +228,17 @@ def setupCamera():
 
 
 def idle():
+    if Sword.swinging_down:
+        time.sleep(0.01)  
+        Sword.angle -= 5  
+        if Sword.angle <= 0:  
+            Sword.swinging_down = False
+            Sword.returning = True  
+    elif Sword.returning:
+        time.sleep(0.01)  
+        Sword.angle += 5  
+        if Sword.angle >= 90:  
+            Sword.returning = False
     glutPostRedisplay()
 
 
