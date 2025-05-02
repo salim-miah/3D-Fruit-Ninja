@@ -81,8 +81,39 @@ class Sword:
     angle = 90
     swinging_down = False  
     returning = False  
+    types_and_strengths = {"Type 1":[50,True], "Type 2": [100,False], "Type 3": [500,True]}
+    sword_colors = {"Type 1": (0.5, 0.2, 0.1), "Type 2": (0.8, 0.8, 0), "Type 3": (1, 0, 0)}
+    unlocked_weapons = {"Type 1": True, "Type 2": False, "Type 3": False}
+    current_type = "Type 1"
     def __init__(self):
-        pass
+        self.current_strength = Sword.types_and_strengths[self.current_type][0]
+        self.current_color = Sword.sword_colors[self.current_type]
+
+    @staticmethod
+    def unlock_weapons(score):
+        if score >= 100:
+            Sword.unlocked_weapons["Type 2"] = True
+        if score >= 500:
+            Sword.unlocked_weapons["Type 3"] = True
+
+    @staticmethod
+    def switch_weapon():
+        weapon_types = list(Sword.types_and_strengths.keys())
+        current_index = weapon_types.index(Sword.current_type)
+        for i in range(1, len(weapon_types)):
+            next_index = (current_index + i) % len(weapon_types)
+            next_weapon = weapon_types[next_index]
+            if Sword.unlocked_weapons[next_weapon]:
+                Sword.current_type = next_weapon
+                Sword.update_weapon_properties()
+                return f"Switched to {next_weapon}"
+        return "Weapon is locked!"
+
+    @staticmethod
+    def update_weapon_properties():
+        Sword.current_strength = Sword.types_and_strengths[Sword.current_type][0]
+        Sword.current_color = Sword.sword_colors[Sword.current_type]
+    
     @staticmethod
     def draw_sword(z):
         glPushMatrix()
@@ -440,6 +471,7 @@ def keyboardListener(key, x, y):
     """
     Handles keyboard inputs for player movement, gun rotation, camera updates, and cheat mode toggles.
     """
+    global game_score
     # Rotate gun left (A key)
     if key == b'a':
         Player.global_angle+=20
@@ -470,6 +502,14 @@ def keyboardListener(key, x, y):
     #To change costumes
     if key == b'c':
         Player.costume_no = (Player.costume_no+1)%3
+    
+    #To change sword types
+    if key == b'e':
+        message = Sword.switch_weapon()
+        if "locked" in message:
+            draw_text(400, 400, message, GLUT_BITMAP_HELVETICA_18)
+        else:
+            print(message)  # Debug message for switching weapons
 
 
 
@@ -539,6 +579,9 @@ def setupCamera():
 
 
 def idle():
+    global game_score
+    Sword.unlock_weapons(game_score)
+    
     if Sword.swinging_down:
         time.sleep(0.01)  
         Sword.angle -= 5  
