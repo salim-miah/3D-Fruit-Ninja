@@ -7,7 +7,7 @@ import time
 
 # Camera-related variables
 camera_pos = (0,500,500)
-thrid_person_camera_pos = (0,-500,500)
+thrid_person_camera_pos = (0,500,500)
 camera_change_rate = 5
 
 fovY = 120  # Field of view
