@@ -361,7 +361,7 @@ class Fruit:
                     glPopMatrix()
 
 def draw_indicators():
-    if left_indicator or right_indicator:
+    if left_indicator == True or right_indicator == True:
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
@@ -371,7 +371,7 @@ def draw_indicators():
         glPushMatrix()
         glLoadIdentity()
         
-        if left_indicator:
+        if left_indicator == True:
             glColor3f(1, 0.2, 0.2)
             glBegin(GL_TRIANGLES)
             glVertex2f(50, 400)
@@ -386,7 +386,7 @@ def draw_indicators():
             glVertex2f(90, 420)
             glEnd()
         
-        if right_indicator:
+        if right_indicator == True:
             glColor3f(1, 0.2, 0.2)
             glBegin(GL_TRIANGLES)
             glVertex2f(950, 400)
