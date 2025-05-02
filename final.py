@@ -640,7 +640,7 @@ def draw_grid():
             if i % 13 == 0:
                 if count % 2 == 0:
                     glBegin(GL_QUAD_STRIP)
-                    glColor3f(0.8, 0.7, 0.5)  # Tatami mat color (light beige)
+                    glColor3f(0.8, 0.7, 0.5)  
                     glVertex3f(x, y, 0)
                     glVertex3f(x, y + GRID_LENGTH, 0)
                     glVertex3f(x - GRID_LENGTH, y, 0)
@@ -648,7 +648,7 @@ def draw_grid():
                     glEnd()
                 else:
                     glBegin(GL_QUAD_STRIP)
-                    glColor3f(0.7, 0.6, 0.4)  # Slightly darker beige for alternating pattern
+                    glColor3f(0.7, 0.6, 0.4)  
                     glVertex3f(x, y, 0)
                     glVertex3f(x, y + GRID_LENGTH, 0)
                     glVertex3f(x - GRID_LENGTH, y, 0)
@@ -660,7 +660,7 @@ def draw_grid():
             else:
                 if count % 2 == 0:
                     glBegin(GL_QUAD_STRIP)
-                    glColor3f(0.8, 0.7, 0.5)  # Tatami mat color
+                    glColor3f(0.8, 0.7, 0.5)  
                     glVertex3f(x, y, 0)
                     glVertex3f(x, y + GRID_LENGTH, 0)
                     glVertex3f(x - GRID_LENGTH, y, 0)
@@ -668,7 +668,7 @@ def draw_grid():
                     glEnd()
                 else:
                     glBegin(GL_QUAD_STRIP)
-                    glColor3f(0.7, 0.6, 0.4)  # Alternating pattern
+                    glColor3f(0.7, 0.6, 0.4)  
                     glVertex3f(x, y, 0)
                     glVertex3f(x, y + GRID_LENGTH, 0)
                     glVertex3f(x - GRID_LENGTH, y, 0)
