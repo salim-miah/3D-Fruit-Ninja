@@ -11,7 +11,8 @@ thrid_person_camera_pos = (0,500,500)
 camera_change_rate = 5
 
 fovY = 120  # Field of view
-GRID_LENGTH = 92  # Length of grid lines
+GRID_LENGTH = 92  # Length of grid lines (tile length?)
+ENTIRE_GRID_LENGTH = 600
 rand_var = 423
 first_person = False
 
@@ -34,6 +35,7 @@ class Player:
     rotatex = 0
     angle_rad = math.radians(global_angle)
     movement = True
+    movement_rate = 10
     cam_x = global_x 
     cam_y = global_y 
     cam_z = 100
@@ -511,6 +513,30 @@ def keyboardListener(key, x, y):
         Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
         Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
         Player.center_z = Player.cam_z  
+    
+    
+    pd = math.radians( (Player.global_angle + 90) % 360)
+    pdx = math.cos(pd)
+    pdy = math.sin(pd)
+    print("global angle: ", (Player.global_angle + 0) % 360)
+    print("pdx: ", pdx)
+    print("pdy: ", pdy)
+    print("pos x: ", Player.global_x)
+    print("pos y: ", Player.global_y)
+    
+    # Move forward (W key)
+    if key == b'w':
+        Player.global_x = Player.global_x + (pdx * Player.movement_rate)
+        Player.global_y = Player.global_y + (pdy * Player.movement_rate)
+
+    # Move backward (S key)
+    if key == b's':
+        Player.global_x = Player.global_x - (pdx * Player.movement_rate)
+        Player.global_y = Player.global_y - (pdy * Player.movement_rate)
+    Player.global_x = min(Player.global_x, ENTIRE_GRID_LENGTH)
+    Player.global_y = min(Player.global_y, ENTIRE_GRID_LENGTH)
+    Player.global_x = max(Player.global_x, -ENTIRE_GRID_LENGTH)
+    Player.global_y = max(Player.global_y, -ENTIRE_GRID_LENGTH)
 
     #To change costumes
     if key == b'c':
