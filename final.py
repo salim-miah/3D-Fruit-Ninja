@@ -483,6 +483,47 @@ def draw_indicators():
 def player_lie_down():
     Player.rotatex = 90
 
+def reset_game():
+    global game_over, player_life, game_score, missed_attempts, check_missed, sliced, pause, switch_message, message_timer
+
+    #game related variables
+    game_over = False
+    player_life = 5
+    game_score = 0
+    missed_attempts = 0
+    check_missed = False
+    sliced = False
+    pause = False
+
+    #sword related variables
+    Sword.angle = 90
+    Sword.swinging_down = False
+    Sword.returning = False
+    Sword.current_type = "Type 1"
+    Sword.current_color = Sword.sword_colors[Sword.current_type]
+    Sword.unlocked_weapons = {"Type 1": True, "Type 2": False, "Type 3": False}
+
+    #message related variables
+    switch_message = ""
+    message_timer = 0
+
+    #fruit related variables
+    Fruit.active_fruits = []
+    Fruit.can_spawn = True
+
+    #player related variables
+    Player.global_x = 0
+    Player.global_y = 0
+    Player.global_z = 0
+    Player.global_angle = 0
+    Player.rotatex = 0
+    Player.angle_rad = math.radians(Player.global_angle)
+    Player.cam_x = Player.global_x
+    Player.cam_y = Player.global_y
+    Player.cam_z = 100
+    Player.costume_no = 0
+
+    print("Game Restarted")
 
 def draw_text(x, y, text, font=GLUT_BITMAP_HELVETICA_18):
     glColor3f(1,1,1)
@@ -566,11 +607,14 @@ def keyboardListener(key, x, y):
         else:
             print(message)  
     if key == b'p':
-        pause = not pause  # Toggle the pause state
+        pause = not pause  
         if pause:
             print("Game Paused")
         else:
             print("Game Resumed")
+    
+    if key == b'r':
+        reset_game()
 
     if not first_person:
         x, y, z = thrid_person_camera_pos
