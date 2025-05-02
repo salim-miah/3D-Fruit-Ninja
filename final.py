@@ -11,7 +11,8 @@ thrid_person_camera_pos = (0,500,500)
 camera_change_rate = 5
 
 fovY = 120  # Field of view
-GRID_LENGTH = 92  # Length of grid lines
+GRID_LENGTH = 92  # Length of grid lines (tile length?)
+ENTIRE_GRID_LENGTH = 600
 rand_var = 423
 first_person = False
 
@@ -22,6 +23,9 @@ right_indicator = False
 game_over = False
 player_life = 5
 game_score = 0
+missed_attempts = 0
+check_missed = False
+sliced = False
 
 switch_message = ""  
 message_timer = 0 
@@ -34,6 +38,7 @@ class Player:
     rotatex = 0
     angle_rad = math.radians(global_angle)
     movement = True
+    movement_rate = 10
     cam_x = global_x 
     cam_y = global_y 
     cam_z = 100
@@ -156,6 +161,7 @@ class Fruit:
 
     @staticmethod
     def spawn_fruit():
+        global missed_attempts, check_missed, game_over, game_score
         if len(Fruit.active_fruits) < Fruit.max_fruits and Fruit.can_spawn == True:
             valid_position = False
             attempts = 0
@@ -261,8 +267,27 @@ class Fruit:
         Fruit.spawn_fruit()
 
     @staticmethod
+    def check_missed_attempts():
+        global check_missed, sliced, missed_attempts, game_score
+        if check_missed and Sword.angle == 90:
+            check_missed = False
+            if not sliced:
+                missed_attempts += 1
+                print(f"Missed swings: {missed_attempts}")
+                if missed_attempts >= 10:
+                    print(f"Missed 10 consecutive swings {missed_attempts}")
+                    game_over = True
+                    player_lie_down()
+                if missed_attempts > 0 and missed_attempts % 3 == 0:
+                    game_score = max(0, game_score-1)
+                    print(f"Score deducted to 1 point for three consecutive missed swings")
+            else:
+                missed_attempts = 0
+        
+    
+    @staticmethod
     def check_sword_collision():
-        global game_score, player_life, game_over
+        global game_score, player_life, game_over, sliced
         if (Sword.swinging_down == False and Sword.returning == False):
             return
         sword_length = Fruit.sword_range
@@ -324,6 +349,7 @@ class Fruit:
                     closest_dist_sq += (fruit_pos[i] - (Fruit.prev_sword_end[i] + movement_dir[i]*movement_dot))**2
                 if distance < (fruit_radius + sword_width) or closest_dist_sq < (fruit_radius + sword_width)**2:
                     fruit["sliced"] = True
+                    sliced = True
                     slice_dir = []
                     for i in range(3):
                         if movement_len > 0:
@@ -362,6 +388,7 @@ class Fruit:
                         player_life -= 1
                         if player_life <= 0:
                             game_over = True
+                            player_lie_down()
                     else:
                         game_score += Fruit.fruits[fruit["type"]]["points"]
         Fruit.prev_sword_end = sword_end
@@ -404,6 +431,9 @@ class Fruit:
                     glPopMatrix()
 
 def draw_indicators():
+    if not first_person:
+        return
+    
     if left_indicator == True or right_indicator == True:
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
@@ -488,29 +518,40 @@ def keyboardListener(key, x, y):
     # Rotate gun left (A key)
     if key == b'a':
         Player.global_angle+=20
-        Player.angle_rad = math.radians(Player.global_angle)
-        Player.cam_x = Player.global_x 
-        if (Player.global_angle%360 >= 90 and Player.global_angle%360 <= 270) or (Player.global_angle%360 >= -90 and Player.global_angle%360 <= -270):
-            Player.cam_y = Player.global_y - 20
-        else:
-            Player.cam_y = Player.global_y + 20
 
-        Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
-        Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
-        Player.center_z = Player.cam_z  
     # Rotate gun right (D key)
     if key == b'd':
-        Player.global_angle-=20
-        Player.angle_rad = math.radians(Player.global_angle)
-        Player.cam_x = Player.global_x
-        if (Player.global_angle%360 >= 90 and Player.global_angle%360 <= 270) or (Player.global_angle%360 >= -90 and Player.global_angle%360 <= -270):
-            Player.cam_y = Player.global_y - 20
-        else:
-            Player.cam_y = Player.global_y + 20 
+        Player.global_angle-=20   
+    
+    pd = math.radians( (Player.global_angle + 90) % 360)
+    pdx = math.cos(pd)
+    pdy = math.sin(pd)
+    
+    # Move forward (W key)
+    if key == b'w':
+        Player.global_x = Player.global_x + (pdx * Player.movement_rate)
+        Player.global_y = Player.global_y + (pdy * Player.movement_rate)
 
-        Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
-        Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
-        Player.center_z = Player.cam_z  
+    # Move backward (S key)
+    if key == b's':
+        Player.global_x = Player.global_x - (pdx * Player.movement_rate)
+        Player.global_y = Player.global_y - (pdy * Player.movement_rate)
+    
+    Player.global_x = min(Player.global_x, ENTIRE_GRID_LENGTH)
+    Player.global_y = min(Player.global_y, ENTIRE_GRID_LENGTH)
+    Player.global_x = max(Player.global_x, -ENTIRE_GRID_LENGTH)
+    Player.global_y = max(Player.global_y, -ENTIRE_GRID_LENGTH)
+    
+    Player.angle_rad = math.radians(Player.global_angle)
+    Player.cam_x = Player.global_x
+    if (Player.global_angle%360 >= 90 and Player.global_angle%360 <= 270) or (Player.global_angle%360 >= -90 and Player.global_angle%360 <= -270):
+        Player.cam_y = Player.global_y - 20
+    else:
+        Player.cam_y = Player.global_y + 20 
+
+    Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
+    Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
+    Player.center_z = Player.cam_z
 
     #To change costumes
     if key == b'c':
@@ -572,7 +613,7 @@ def specialKeyListener(key, x, y):
     camera_pos = (x, y, z)
 
 def mouseListener(button, state, x, y):
-    global first_person
+    global first_person, check_missed, sliced
     """
     Handles mouse inputs for firing bullets (left click) and toggling camera mode (right click).
     """
@@ -582,6 +623,9 @@ def mouseListener(button, state, x, y):
     if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
         if not Sword.swinging_down and not Sword.returning:
             Sword.swinging_down = True  
+            check_missed = True
+            Sword.angle = 85
+            sliced = False
 
 
 def setupCamera():
@@ -613,7 +657,16 @@ def setupCamera():
 
 
 def idle():
-    global game_score
+    global game_score, game_over
+    
+    if game_over:
+        return
+    
+    
+    Fruit.update_fruits(0.016)
+    Fruit.check_sword_collision()
+    Fruit.check_missed_attempts()
+    
     Sword.unlock_weapons(game_score)
     
     if Sword.swinging_down:
@@ -733,8 +786,8 @@ def showScreen():
     player.draw_player()
 
     # Update and draw fruits
-    Fruit.update_fruits(0.016)
-    Fruit.check_sword_collision()
+    # Fruit.update_fruits(0.016)
+    # Fruit.check_sword_collision()
     Fruit.draw_fruits()
     
     # Draw score and lives
