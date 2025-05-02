@@ -23,6 +23,9 @@ game_over = False
 player_life = 5
 game_score = 0
 
+switch_message = ""  
+message_timer = 0 
+
 class Player:
     global_x = 0
     global_y = 0
@@ -83,8 +86,45 @@ class Sword:
     angle = 90
     swinging_down = False  
     returning = False  
+    types_and_strengths = {"Type 1":[50,True], "Type 2": [100,False], "Type 3": [500,True]}
+    sword_colors = {"Type 1": (128/255, 128/255, 128/255), "Type 2": (0.8, 0.8, 0), "Type 3": (1, 0, 0)}
+    unlocked_weapons = {"Type 1": True, "Type 2": False, "Type 3": False}
+    current_type = "Type 1"
+    current_color = sword_colors[current_type]
     def __init__(self):
-        pass
+        self.current_strength = Sword.types_and_strengths[self.current_type][0]
+        
+
+    @staticmethod
+    def unlock_weapons(score):
+        if score >= 100:
+            Sword.unlocked_weapons["Type 2"] = True
+        if score >= 500:
+            Sword.unlocked_weapons["Type 3"] = True
+
+    @staticmethod
+    def switch_weapon():
+        global switch_message, message_timer
+        weapon_types = list(Sword.types_and_strengths.keys())
+        current_index = weapon_types.index(Sword.current_type)
+        for i in range(1, len(weapon_types)):
+            next_index = (current_index + i) % len(weapon_types)
+            next_weapon = weapon_types[next_index]
+            if Sword.unlocked_weapons[next_weapon]:
+                Sword.current_type = next_weapon
+                Sword.update_weapon_properties()
+                switch_message = f"Switched to {next_weapon}"  
+                message_timer = 3  
+                return switch_message
+        switch_message = "Weapon is locked!"  
+        message_timer = 3  
+        return switch_message
+
+    @staticmethod
+    def update_weapon_properties():
+        Sword.current_strength = Sword.types_and_strengths[Sword.current_type][0]
+        Sword.current_color = Sword.sword_colors[Sword.current_type]
+    
     @staticmethod
     def draw_sword(z):
         glPushMatrix()
@@ -93,7 +133,8 @@ class Sword:
         glColor3f(0.5, 0.2, 0.1)  # Sword handle color (brown)
         gluCylinder(gluNewQuadric(), 3, 3, 10, 10, 10)  # Sword handle
         glTranslatef(0, 0, 10) 
-        glColor3f(115/255, 117/255, 114/255)  # Sword blade color (gray)
+        r, g, b = Sword.current_color
+        glColor3f(r,g,b)  # Sword blade color (gray)
         gluCylinder(gluNewQuadric(), 2, 2, 50, 10, 10)  # Sword blade
         glPopMatrix()
 
@@ -190,12 +231,12 @@ class Fruit:
             
             if fruit["sliced"] == False:
                 if fruit["rising"] == True:
-                    fruit["z"] += fruit["vz"] * delta_time * 30
+                    fruit["z"] += fruit["vz"] * delta_time * 5
                     if fruit["z"] >= fruit["peak_z"]:
                         fruit["rising"] = False
                         fruit["vz"] *= -1
                 else:
-                    fruit["z"] += fruit["vz"] * delta_time * 30
+                    fruit["z"] += fruit["vz"] * delta_time * 5
                     
                 if fruit["z"] < -60:
                     Fruit.active_fruits.remove(fruit)
@@ -211,9 +252,9 @@ class Fruit:
                     continue
                 
                 for half in fruit["halves"]:
-                    half["x"] += half["vx"] * delta_time * 30
-                    half["y"] += half["vy"] * delta_time * 30
-                    half["z"] += half["vz"] * delta_time * 30
+                    half["x"] += half["vx"] * delta_time * 5
+                    half["y"] += half["vy"] * delta_time * 5
+                    half["z"] += half["vz"] * delta_time * 5
         left_indicator = left_fruits
         right_indicator = right_fruits
         
@@ -442,8 +483,7 @@ def keyboardListener(key, x, y):
     """
     Handles keyboard inputs for player movement, gun rotation, camera updates, and cheat mode toggles.
     """
-    
-    global first_person, camera_pos, thrid_person_camera_pos, camera_change_rate
+    global game_score, first_person, camera_pos, thrid_person_camera_pos, camera_change_rate
     
     # Rotate gun left (A key)
     if key == b'a':
@@ -475,7 +515,14 @@ def keyboardListener(key, x, y):
     #To change costumes
     if key == b'c':
         Player.costume_no = (Player.costume_no+1)%3
-
+    
+    #To change sword types
+    if key == b'e':
+        message = Sword.switch_weapon()
+        if "locked" in message:
+            draw_text(400, 400, message, GLUT_BITMAP_HELVETICA_18)
+        else:
+            print(message)  
     if not first_person:
         x, y, z = thrid_person_camera_pos
 
@@ -566,6 +613,9 @@ def setupCamera():
 
 
 def idle():
+    global game_score
+    Sword.unlock_weapons(game_score)
+    
     if Sword.swinging_down:
         time.sleep(0.01)  
         Sword.angle -= 5  
@@ -666,6 +716,7 @@ def showScreen():
     - Clears the screen and sets up the camera.
     - Draws everything of the screen
     """
+    global message_timer,switch_message
     # Clear color and depth buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()  # Reset modelview matrix
@@ -685,7 +736,12 @@ def showScreen():
     # Draw score and lives
     draw_text(50, 750, f"Score: {game_score}")
     draw_text(50, 720, f"Lives: {player_life}")
-    
+
+    # Display the sword switch message
+    if message_timer > 0:
+        draw_text(400, 400, switch_message, GLUT_BITMAP_HELVETICA_18)
+        message_timer -= 0.016  # Decrease the timer (assuming 60 FPS)
+
     if game_over:
         draw_text(400, 400, "GAME OVER", GLUT_BITMAP_HELVETICA_12)
     draw_indicators()
