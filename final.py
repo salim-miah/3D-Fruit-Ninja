@@ -27,7 +27,7 @@ missed_attempts = 0
 check_missed = False
 sliced = False
 pause = False
-fruit_change_rate = 1.0
+fruit_change_rate = 3.0
 fruit_change_increment = 5.0
 
 switch_message = ""  
@@ -195,7 +195,7 @@ class Fruit:
                 
             if random.random() < 0.15:
                 fruit_type = 4
-            elif random.random() < 0.65:
+            elif random.random() < 0.75:
                 fruit_type = random.randint(0, 1) + 1
             else:
                 fruit_type = random.randint(0, 3)
@@ -274,7 +274,7 @@ class Fruit:
 
     @staticmethod
     def check_missed_attempts():
-        global check_missed, sliced, missed_attempts, game_score
+        global check_missed, sliced, missed_attempts, game_score, game_over
         if check_missed and Sword.angle == 90:
             check_missed = False
             if not sliced:
@@ -885,6 +885,9 @@ def showScreen():
     draw_text(50, 750, f"Score: {game_score}")
     draw_text(50, 720, f"Lives: {player_life}")
     draw_text(50, 690, f"Sword Strength: {Sword.current_strength}")
+    draw_text(50, 660, f"Sword Type: {Sword.current_type}")
+    draw_text(50, 630, f"Press 'p' to pause")
+    draw_text(50, 600, f"Press 'r' to restart")
 
     # Display the sword switch message
     if message_timer > 0 and not game_over :
