@@ -27,6 +27,8 @@ missed_attempts = 0
 check_missed = False
 sliced = False
 pause = False
+fruit_change_rate = 5.0
+fruit_change_increment = 5.0
 
 switch_message = ""  
 message_timer = 0 
@@ -191,6 +193,8 @@ class Fruit:
                 
             if random.random() < 0.15:
                 fruit_type = 4
+            elif random.random() < 0.65:
+                fruit_type = random.randint(0, 1) + 1
             else:
                 fruit_type = random.randint(0, 3)
             
@@ -287,7 +291,9 @@ class Fruit:
     
     @staticmethod
     def check_sword_collision():
-        global game_score, player_life, game_over, sliced
+        
+        global game_score, player_life, game_over, sliced, fruit_change_rate, fruit_change_increment
+        
         if (Sword.swinging_down == False and Sword.returning == False):
             return
         sword_length = Fruit.sword_range
@@ -418,6 +424,8 @@ class Fruit:
                             player_lie_down()
                     else:
                         game_score += Fruit.fruits[fruit["type"]]["points"]
+                        if game_score % 100 == 0:
+                            fruit_change_rate += fruit_change_increment
         Fruit.prev_sword_end = sword_end
 
     @staticmethod
@@ -735,7 +743,7 @@ def setupCamera():
 
 
 def idle():
-    global game_score, game_over, pause
+    global game_score, game_over, pause, fruit_change_rate
     
     if game_over:
         return
@@ -744,7 +752,7 @@ def idle():
         return
     
     
-    Fruit.update_fruits(0.016)
+    Fruit.update_fruits(0.016 * fruit_change_rate)
     Fruit.check_sword_collision()
     Fruit.check_missed_attempts()
     
@@ -874,6 +882,7 @@ def showScreen():
     # Draw score and lives
     draw_text(50, 750, f"Score: {game_score}")
     draw_text(50, 720, f"Lives: {player_life}")
+    draw_text(50, 690, f"Sword Strength: {Sword.current_strength}")
 
     # Display the sword switch message
     if message_timer > 0 and not game_over :
