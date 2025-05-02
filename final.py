@@ -13,7 +13,9 @@ GRID_LENGTH = 92  # Length of grid lines
 rand_var = 423
 first_person = False
 
-
+active_indicators = []  
+left_indicator = False
+right_indicator = False
 
 game_over = False
 player_life = 5
@@ -106,38 +108,62 @@ class Fruit:
     active_fruits = []
     max_fruits = 4
     can_spawn = True
-    sword_range = 100
-    
+    sword_range = 120
+    player_radius = 40
+
     @staticmethod
     def spawn_fruit():
-        if len(Fruit.active_fruits) < Fruit.max_fruits and Fruit.can_spawn:
-            angle = Player.angle_rad
-            distance = random.uniform(50, Fruit.sword_range)
-            offset = random.uniform(-40, 40)
+        if len(Fruit.active_fruits) < Fruit.max_fruits and Fruit.can_spawn == True:
+            valid_position = False
+            attempts = 0
             
-
-            x = Player.global_x - math.sin(angle) * distance + math.cos(angle) * offset
-            y = Player.global_y + math.cos(angle) * distance + math.sin(angle) * offset
-            z = random.uniform(200, 400)
+            while valid_position == False and attempts < 10:
+                attempts += 1
+                
+                angle_offset = random.choice([0, math.pi/2, -math.pi/2, math.pi/4, -math.pi/4])
+                
+                distance = random.uniform(Fruit.player_radius + 30, Fruit.sword_range)
+                
+                x = Player.global_x - math.sin(Player.angle_rad + angle_offset) * distance
+                y = Player.global_y + math.cos(Player.angle_rad + angle_offset) * distance
+                z = -50
+                
+                dist_to_player = math.sqrt((x - Player.global_x)**2 + (y - Player.global_y)**2)
+                if dist_to_player > Fruit.player_radius + 20:
+                    valid_position = True
             
-
-            vx = 0
-            vy = 0
-            vz = random.uniform(-1.5, -0.5)
-            
+            if valid_position == False:
+                return
+                
+            vz = random.uniform(3, 5)
+            peak_z = random.uniform(150, 250)
+                
             if random.random() < 0.15:
                 fruit_type = 4
             else:
                 fruit_type = random.randint(0, 3)
-                
+            
+            fruit_id = random.randint(0, 1000000)
+            dx = x - Player.global_x
+            dy = y - Player.global_y
+            angle = math.atan2(dy, dx) - Player.angle_rad
+            angle = (angle + math.pi) % (2 * math.pi) - math.pi
+            side = "left" if angle > 0 else "right"
+            global active_indicators
+            active_indicators.append((side, fruit_id))
+
+
+
             Fruit.active_fruits.append({
                 "type": fruit_type,
                 "x": x,
                 "y": y,
                 "z": z,
-                "vx": vx,
-                "vy": vy,
+                "vx": 0,
+                "vy": 0,
                 "vz": vz,
+                "peak_z": peak_z,
+                "rising": True,
                 "sliced": False,
                 "slice_time": 0,
                 "halves": []
@@ -146,11 +172,30 @@ class Fruit:
     
     @staticmethod
     def update_fruits(delta_time):
+        global left_indicator, right_indicator
+        left_fruits = False
+        right_fruits = False
+        
         for fruit in Fruit.active_fruits[:]:
-            if not fruit["sliced"]:
-                fruit["z"] += fruit["vz"] * delta_time * 30
-                
-                if fruit["z"] < -50:
+            dx = fruit["x"] - Player.global_x
+            dy = fruit["y"] - Player.global_y
+            angle = math.atan2(dy, dx) - Player.angle_rad
+            angle = (angle + math.pi) % (2 * math.pi) - math.pi
+            if angle > 0:
+                left_fruits = True
+            else:
+                right_fruits = True
+            
+            if fruit["sliced"] == False:
+                if fruit["rising"] == True:
+                    fruit["z"] += fruit["vz"] * delta_time * 30
+                    if fruit["z"] >= fruit["peak_z"]:
+                        fruit["rising"] = False
+                        fruit["vz"] *= -1
+                else:
+                    fruit["z"] += fruit["vz"] * delta_time * 30
+                    
+                if fruit["z"] < -60:
                     Fruit.active_fruits.remove(fruit)
                     Fruit.can_spawn = True
                     if fruit["type"] != 4:
@@ -167,25 +212,19 @@ class Fruit:
                     half["x"] += half["vx"] * delta_time * 30
                     half["y"] += half["vy"] * delta_time * 30
                     half["z"] += half["vz"] * delta_time * 30
+        left_indicator = left_fruits
+        right_indicator = right_fruits
         
         Fruit.spawn_fruit()
-    
+
     @staticmethod
     def check_sword_collision():
         global game_score, player_life, game_over
-        
-        if not (Sword.swinging_down or Sword.returning):
+        if (Sword.swinging_down == False and Sword.returning == False):
             return
-            
         sword_length = Fruit.sword_range
-        sword_width = 20
-        
-
-        sword_start = [
-            Player.global_x,
-            Player.global_y,
-            Player.global_z + 100
-        ]
+        sword_width = 25
+        sword_start = [Player.global_x,Player.global_y,Player.global_z + 100]
         
         sword_angle_rad = math.radians(Sword.angle)
         sword_end = [
@@ -193,67 +232,101 @@ class Fruit:
             sword_start[1] + math.cos(Player.angle_rad) * sword_length * math.cos(sword_angle_rad),
             sword_start[2] + sword_length * math.sin(sword_angle_rad)
         ]
-        
+        if not hasattr(Fruit, 'prev_sword_end'):
+            Fruit.prev_sword_end = sword_end
+        sword_movement = [
+            sword_end[0] - Fruit.prev_sword_end[0],
+            sword_end[1] - Fruit.prev_sword_end[1],
+            sword_end[2] - Fruit.prev_sword_end[2]
+        ]
         for fruit in Fruit.active_fruits[:]:
-            if fruit["sliced"]:
+            if fruit["sliced"] == True:
                 continue
-                
             fruit_pos = [fruit["x"], fruit["y"], fruit["z"]]
             fruit_radius = 20
-
-            sword_vec = [
-                sword_end[0] - sword_start[0],
-                sword_end[1] - sword_start[1],
-                sword_end[2] - sword_start[2]
-            ]
+            sword_vec = [sword_end[0]-sword_start[0], sword_end[1]-sword_start[1], sword_end[2]-sword_start[2]]
+            fruit_vec = [fruit_pos[0]-sword_start[0], fruit_pos[1]-sword_start[1], fruit_pos[2]-sword_start[2]]
             
-            fruit_vec = [
-                fruit_pos[0] - sword_start[0],
-                fruit_pos[1] - sword_start[1],
-                fruit_pos[2] - sword_start[2]
-            ]
-            dot = sum(sword_vec[i]*fruit_vec[i] for i in range(3))
-            sword_len_sq = sum(sword_vec[i]**2 for i in range(3))
+            dot = 0
+            for i in range(3):
+                dot += sword_vec[i]*fruit_vec[i]
+            sword_len_sq = 0
+            for i in range(3):
+                sword_len_sq += sword_vec[i]**2
             t = max(0, min(1, dot/sword_len_sq))
+            
             closest_point = [
                 sword_start[0] + t*sword_vec[0],
                 sword_start[1] + t*sword_vec[1],
                 sword_start[2] + t*sword_vec[2]
             ]
-            distance = math.sqrt(sum((fruit_pos[i]-closest_point[i])**2 for i in range(3)))
-            if distance < (fruit_radius + sword_width):
-                fruit["sliced"] = True
-                direction = -1 if random.random() < 0.5 else 1
-                fruit["halves"] = [
-                    {
-                        "x": fruit["x"],
-                        "y": fruit["y"],
-                        "z": fruit["z"],
-                        "vx": random.uniform(3, 7) * direction,
-                        "vy": random.uniform(-3, 3),
-                        "vz": random.uniform(2, 5)
-                    },
-                    {
-                        "x": fruit["x"],
-                        "y": fruit["y"],
-                        "z": fruit["z"],
-                        "vx": random.uniform(3, 7) * -direction,
-                        "vy": random.uniform(-3, 3),
-                        "vz": random.uniform(2, 5)
-                    }
-                ]
-                
-                if fruit["type"] == 4:
-                    player_life -= 1
-                    if player_life <= 0:
-                        game_over = True
-                else:
-                    game_score += Fruit.fruits[fruit["type"]]["points"]
-    
+            
+            distance = 0
+            for i in range(3):
+                distance += (fruit_pos[i]-closest_point[i])**2
+            distance = math.sqrt(distance)
+            movement_len = 0
+            for i in range(3):
+                movement_len += sword_movement[i]**2
+            movement_len = math.sqrt(movement_len)
+            if movement_len > 0:
+                movement_dir = []
+                for i in range(3):
+                    movement_dir.append(sword_movement[i]/movement_len)
+                movement_dot = 0
+                for i in range(3):
+                    movement_dot += movement_dir[i]*(fruit_pos[i]-Fruit.prev_sword_end[i])
+                closest_dist_sq = 0
+                for i in range(3):
+                    closest_dist_sq += (fruit_pos[i] - (Fruit.prev_sword_end[i] + movement_dir[i]*movement_dot))**2
+                if distance < (fruit_radius + sword_width) or closest_dist_sq < (fruit_radius + sword_width)**2:
+                    fruit["sliced"] = True
+                    slice_dir = []
+                    for i in range(3):
+                        if movement_len > 0:
+                            slice_dir.append(sword_movement[i])
+                        else:
+                            slice_dir.append(random.uniform(-1, 1))
+                    slice_dir_len = 0
+                    for i in range(3):
+                        slice_dir_len += slice_dir[i]**2
+                    slice_dir_len = math.sqrt(slice_dir_len)
+                    if slice_dir_len > 0:
+                        temp = []
+                        for i in range(3):
+                            temp.append(slice_dir[i]/slice_dir_len)
+                        slice_dir = temp
+                    fruit["halves"] = [
+                        {
+                            "x": fruit["x"],
+                            "y": fruit["y"],
+                            "z": fruit["z"],
+                            "vx": slice_dir[0] * 8 + random.uniform(-2, 2),
+                            "vy": slice_dir[1] * 8 + random.uniform(-2, 2),
+                            "vz": slice_dir[2] * 8 + random.uniform(2, 5)
+                        },
+                        {
+                            "x": fruit["x"],
+                            "y": fruit["y"],
+                            "z": fruit["z"],
+                            "vx": -slice_dir[0] * 8 + random.uniform(-2, 2),
+                            "vy": -slice_dir[1] * 8 + random.uniform(-2, 2),
+                            "vz": -slice_dir[2] * 4 + random.uniform(2, 5)
+                        }
+                    ]
+                    
+                    if fruit["type"] == 4:
+                        player_life -= 1
+                        if player_life <= 0:
+                            game_over = True
+                    else:
+                        game_score += Fruit.fruits[fruit["type"]]["points"]
+        Fruit.prev_sword_end = sword_end
+
     @staticmethod
     def draw_fruits():
         for fruit in Fruit.active_fruits:
-            if not fruit["sliced"]:
+            if fruit["sliced"] == False:
                 glPushMatrix()
                 glTranslatef(fruit["x"], fruit["y"], fruit["z"])
                 fruit_type = Fruit.fruits[fruit["type"]]
@@ -286,6 +359,52 @@ class Fruit:
                         glTranslatef(0, 0, 15)
                         glutSolidCone(4, 8, 10, 10)
                     glPopMatrix()
+
+def draw_indicators():
+    if left_indicator == True or right_indicator == True:
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        gluOrtho2D(0, 1000, 0, 800)
+        
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        
+        if left_indicator == True:
+            glColor3f(1, 0.2, 0.2)
+            glBegin(GL_TRIANGLES)
+            glVertex2f(50, 400)
+            glVertex2f(100, 370)
+            glVertex2f(100, 430)
+            glEnd()
+            pulse = abs(math.sin(time.time() * 3)) * 0.3 + 0.7
+            glColor3f(1, pulse, pulse)
+            glBegin(GL_TRIANGLES)
+            glVertex2f(60, 400)
+            glVertex2f(90, 380)
+            glVertex2f(90, 420)
+            glEnd()
+        
+        if right_indicator == True:
+            glColor3f(1, 0.2, 0.2)
+            glBegin(GL_TRIANGLES)
+            glVertex2f(950, 400)
+            glVertex2f(900, 370)
+            glVertex2f(900, 430)
+            glEnd()
+            pulse = abs(math.sin(time.time() * 3)) * 0.3 + 0.7
+            glColor3f(1, pulse, pulse)
+            glBegin(GL_TRIANGLES)
+            glVertex2f(940, 400)
+            glVertex2f(910, 380)
+            glVertex2f(910, 420)
+            glEnd()
+        
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
 
 def player_lie_down():
     Player.rotatex = 90
@@ -541,8 +660,8 @@ def showScreen():
     draw_text(50, 720, f"Lives: {player_life}")
     
     if game_over:
-        draw_text(400, 400, "GAME OVER", GLUT_BITMAP_TIMES_ROMAN_24)
-
+        draw_text(400, 400, "GAME OVER", GLUT_BITMAP_HELVETICA_12)
+    draw_indicators()
     # Swap buffers for smooth rendering (double buffering)
     glutSwapBuffers()
 
