@@ -267,8 +267,27 @@ class Fruit:
         Fruit.spawn_fruit()
 
     @staticmethod
+    def check_missed_attempts():
+        global check_missed, sliced, missed_attempts, game_score
+        if check_missed and Sword.angle == 90:
+            check_missed = False
+            if not sliced:
+                missed_attempts += 1
+                print(f"Missed swings: {missed_attempts}")
+                if missed_attempts >= 10:
+                    print(f"Missed 10 consecutive swings {missed_attempts}")
+                    game_over = True
+                    player_lie_down()
+                if missed_attempts > 0 and missed_attempts % 3 == 0:
+                    game_score = max(0, game_score-1)
+                    print(f"Score deducted to 1 point for three consecutive missed swings")
+            else:
+                missed_attempts = 0
+        
+    
+    @staticmethod
     def check_sword_collision():
-        global game_score, player_life, game_over, missed_attempts, check_missed, sliced
+        global game_score, player_life, game_over, sliced
         if (Sword.swinging_down == False and Sword.returning == False):
             return
         sword_length = Fruit.sword_range
@@ -646,6 +665,7 @@ def idle():
     
     Fruit.update_fruits(0.016)
     Fruit.check_sword_collision()
+    Fruit.check_missed_attempts()
     
     Sword.unlock_weapons(game_score)
     
