@@ -97,9 +97,10 @@ class Sword:
     unlocked_weapons = {"Type 1": True, "Type 2": False, "Type 3": False}
     current_type = "Type 1"
     current_color = sword_colors[current_type]
+    current_strength = types_and_strengths[current_type][0]
+    
     def __init__(self):
-        self.current_strength = Sword.types_and_strengths[self.current_type][0]
-        
+        pass        
 
     @staticmethod
     def unlock_weapons(score):
@@ -147,10 +148,10 @@ class Sword:
 
 class Fruit:
     fruits = [
-        {"shape": "sphere", "color": (1, 0, 0), "hardness": 1, "points": 10},
-        {"shape": "sphere", "color": (0, 1, 0), "hardness": 2, "points": 20},
-        {"shape": "sphere", "color": (1, 1, 0), "hardness": 3, "points": 30},
-        {"shape": "cube", "color": (1, 0.5, 0), "hardness": 4, "points": 40},
+        {"shape": "sphere", "color": (1, 0, 0), "hardness": 50, "points": 10},
+        {"shape": "sphere", "color": (0, 1, 0), "hardness": 50, "points": 20},
+        {"shape": "sphere", "color": (1, 1, 0), "hardness": 100, "points": 50},
+        {"shape": "cube", "color": (1, 0.5, 0), "hardness": 500, "points": 100},
         {"shape": "bomb", "color": (0, 0, 0), "hardness": 10, "points": -1}
     ]
     
@@ -216,7 +217,8 @@ class Fruit:
                 "rising": True,
                 "sliced": False,
                 "slice_time": 0,
-                "halves": []
+                "halves": [],
+                "failed_slice": False
             })
             Fruit.can_spawn = False
     
@@ -248,9 +250,6 @@ class Fruit:
                 if fruit["z"] < -60:
                     Fruit.active_fruits.remove(fruit)
                     Fruit.can_spawn = True
-                    if fruit["type"] != 4:
-                        global player_life
-                        player_life -= 1
             else:
                 fruit["slice_time"] += delta_time
                 if fruit["slice_time"] > 1.5:
@@ -349,6 +348,33 @@ class Fruit:
                 for i in range(3):
                     closest_dist_sq += (fruit_pos[i] - (Fruit.prev_sword_end[i] + movement_dir[i]*movement_dot))**2
                 if distance < (fruit_radius + sword_width) or closest_dist_sq < (fruit_radius + sword_width)**2:
+                    
+                    fruit_object = Fruit.fruits[fruit["type"]]
+                    
+                    if fruit["type"] != 4 and Sword.current_strength < fruit_object["hardness"]:
+                        print("fruit hardness: ", fruit_object["hardness"])
+                        print("sword strength: ", Sword.current_strength)
+                        
+                        if fruit["failed_slice"]:
+                            return
+                        
+                        fruit["failed_slice"] = True
+                        
+                        Sword.current_strength -= 15
+                        print("hit a hard fruit. Sword strength reduced to: ", Sword.current_strength)
+                        
+                        if Sword.current_strength <= 0:
+                            message = Sword.switch_weapon()
+                            if "locked" in message:
+                                print("No weapons availabe")
+                                game_over = True
+                                player_lie_down()
+
+                        Fruit.active_fruits.remove(fruit)
+                        Fruit.can_spawn = True
+                    
+                        return
+                    
                     fruit["sliced"] = True
                     sliced = True
                     slice_dir = []
@@ -397,7 +423,7 @@ class Fruit:
     @staticmethod
     def draw_fruits():
         for fruit in Fruit.active_fruits:
-            if fruit["sliced"] == False:
+            if fruit["sliced"] == False and not fruit["failed_slice"]:
                 glPushMatrix()
                 glTranslatef(fruit["x"], fruit["y"], fruit["z"])
                 fruit_type = Fruit.fruits[fruit["type"]]
@@ -413,7 +439,7 @@ class Fruit:
                     glTranslatef(0, 0, 22)
                     glutSolidCone(6, 12, 10, 10)
                 glPopMatrix()
-            else:
+            elif fruit["sliced"]:
                 for i, half in enumerate(fruit["halves"]):
                     glPushMatrix()
                     glTranslatef(half["x"], half["y"], half["z"])
@@ -850,7 +876,7 @@ def showScreen():
     draw_text(50, 720, f"Lives: {player_life}")
 
     # Display the sword switch message
-    if message_timer > 0:
+    if message_timer > 0 and not game_over :
         draw_text(400, 400, switch_message, GLUT_BITMAP_HELVETICA_18)
         message_timer -= 0.016  # Decrease the timer (assuming 60 FPS)
 
