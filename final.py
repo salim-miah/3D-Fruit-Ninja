@@ -23,6 +23,9 @@ right_indicator = False
 game_over = False
 player_life = 5
 game_score = 0
+missed_attempts = 0
+check_missed = False
+sliced = False
 
 switch_message = ""  
 message_timer = 0 
@@ -158,6 +161,7 @@ class Fruit:
 
     @staticmethod
     def spawn_fruit():
+        global missed_attempts, check_missed, game_over, game_score
         if len(Fruit.active_fruits) < Fruit.max_fruits and Fruit.can_spawn == True:
             valid_position = False
             attempts = 0
@@ -264,7 +268,7 @@ class Fruit:
 
     @staticmethod
     def check_sword_collision():
-        global game_score, player_life, game_over
+        global game_score, player_life, game_over, missed_attempts, check_missed, sliced
         if (Sword.swinging_down == False and Sword.returning == False):
             return
         sword_length = Fruit.sword_range
@@ -326,6 +330,7 @@ class Fruit:
                     closest_dist_sq += (fruit_pos[i] - (Fruit.prev_sword_end[i] + movement_dir[i]*movement_dot))**2
                 if distance < (fruit_radius + sword_width) or closest_dist_sq < (fruit_radius + sword_width)**2:
                     fruit["sliced"] = True
+                    sliced = True
                     slice_dir = []
                     for i in range(3):
                         if movement_len > 0:
@@ -364,6 +369,7 @@ class Fruit:
                         player_life -= 1
                         if player_life <= 0:
                             game_over = True
+                            player_lie_down()
                     else:
                         game_score += Fruit.fruits[fruit["type"]]["points"]
         Fruit.prev_sword_end = sword_end
@@ -502,12 +508,6 @@ def keyboardListener(key, x, y):
     pdx = math.cos(pd)
     pdy = math.sin(pd)
     
-    print("global angle: ", (Player.global_angle + 0) % 360)
-    print("pdx: ", pdx)
-    print("pdy: ", pdy)
-    print("pos x: ", Player.global_x)
-    print("pos y: ", Player.global_y)
-    
     # Move forward (W key)
     if key == b'w':
         Player.global_x = Player.global_x + (pdx * Player.movement_rate)
@@ -594,7 +594,7 @@ def specialKeyListener(key, x, y):
     camera_pos = (x, y, z)
 
 def mouseListener(button, state, x, y):
-    global first_person
+    global first_person, check_missed, sliced
     """
     Handles mouse inputs for firing bullets (left click) and toggling camera mode (right click).
     """
@@ -604,6 +604,9 @@ def mouseListener(button, state, x, y):
     if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
         if not Sword.swinging_down and not Sword.returning:
             Sword.swinging_down = True  
+            check_missed = True
+            Sword.angle = 85
+            sliced = False
 
 
 def setupCamera():
@@ -635,7 +638,15 @@ def setupCamera():
 
 
 def idle():
-    global game_score
+    global game_score, game_over
+    
+    if game_over:
+        return
+    
+    
+    Fruit.update_fruits(0.016)
+    Fruit.check_sword_collision()
+    
     Sword.unlock_weapons(game_score)
     
     if Sword.swinging_down:
@@ -770,8 +781,8 @@ def showScreen():
     player.draw_player()
 
     # Update and draw fruits
-    Fruit.update_fruits(0.016)
-    Fruit.check_sword_collision()
+    # Fruit.update_fruits(0.016)
+    # Fruit.check_sword_collision()
     Fruit.draw_fruits()
     
     # Draw score and lives
