@@ -678,33 +678,18 @@ def draw_grid():
                 count += 1
         
 def draw_walls():
-    # Front wall (Shoji screen)
+    # Front wall
     glBegin(GL_QUAD_STRIP)
-    glColor3f(0.9, 0.9, 0.9)  # Shoji screen base color (white)
+    glColor3f(0.9, 0.9, 0.9)  
     glVertex3f(600, -600, 0)
     glVertex3f(600, -600, 100)
-    glVertex3f(600, 596, 0)
-    glVertex3f(600, 596, 100)
+    glVertex3f(-596, -600, 0)
+    glVertex3f(-596, -600, 100)
     glEnd()
-
-    # Shoji screen grid lines
-    for i in range(-600, 600, 100):
-        glBegin(GL_LINES)
-        glColor3f(0.5, 0.3, 0.1)  # Wooden frame color (brown)
-        glVertex3f(600, i, 0)
-        glVertex3f(600, i, 100)
-        glEnd()
-
-    for i in range(0, 100, 10):
-        glBegin(GL_LINES)
-        glColor3f(0.5, 0.3, 0.1)  # Wooden frame color
-        glVertex3f(600, -600, i)
-        glVertex3f(600, 600, i)
-        glEnd()
 
     # Left wall
     glBegin(GL_QUAD_STRIP)
-    glColor3f(0.5, 0.3, 0.1)  # Wooden wall color
+    glColor3f(0.5, 0.3, 0.1)  
     glVertex3f(-596, -600, 0)
     glVertex3f(-596, -600, 100)
     glVertex3f(-596, 596, 0)
@@ -713,7 +698,7 @@ def draw_walls():
 
     # Right wall
     glBegin(GL_QUAD_STRIP)
-    glColor3f(0.5, 0.3, 0.1)  # Wooden wall color
+    glColor3f(0.5, 0.3, 0.1)  
     glVertex3f(600, -600, 0)
     glVertex3f(600, -600, 100)
     glVertex3f(600, 596, 0)
@@ -722,7 +707,7 @@ def draw_walls():
 
     # Back wall
     glBegin(GL_QUAD_STRIP)
-    glColor3f(0.9, 0.9, 0.9)  # Shoji screen base color
+    glColor3f(0.9, 0.9, 0.9)  
     glVertex3f(-596, 596, 0)
     glVertex3f(-596, 596, 100)
     glVertex3f(600, 596, 0)
