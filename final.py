@@ -149,8 +149,8 @@ class Fruit:
     fruits = [
         {"shape": "sphere", "color": (1, 0, 0), "hardness": 50, "points": 10},
         {"shape": "sphere", "color": (0, 1, 0), "hardness": 50, "points": 20},
-        {"shape": "sphere", "color": (1, 1, 0), "hardness": 100, "points": 30},
-        {"shape": "cube", "color": (1, 0.5, 0), "hardness": 500, "points": 40},
+        {"shape": "sphere", "color": (1, 1, 0), "hardness": 100, "points": 50},
+        {"shape": "cube", "color": (1, 0.5, 0), "hardness": 500, "points": 100},
         {"shape": "bomb", "color": (0, 0, 0), "hardness": 10, "points": -1}
     ]
     
@@ -190,8 +190,6 @@ class Fruit:
                 
             if random.random() < 0.15:
                 fruit_type = 4
-            elif random.random() < 0.9:
-                fruit_type = 3
             else:
                 fruit_type = random.randint(0, 3)
             
@@ -353,6 +351,8 @@ class Fruit:
                     fruit_object = Fruit.fruits[fruit["type"]]
                     
                     if fruit["type"] != 4 and Sword.current_strength < fruit_object["hardness"]:
+                        print("fruit hardness: ", fruit_object["hardness"])
+                        print("sword strength: ", Sword.current_strength)
                         
                         if fruit["failed_slice"]:
                             return
