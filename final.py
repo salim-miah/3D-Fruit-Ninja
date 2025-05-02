@@ -251,9 +251,6 @@ class Fruit:
                 if fruit["z"] < -60:
                     Fruit.active_fruits.remove(fruit)
                     Fruit.can_spawn = True
-                    if fruit["type"] != 4:
-                        global player_life
-                        player_life -= 1
             else:
                 fruit["slice_time"] += delta_time
                 if fruit["slice_time"] > 1.5:
@@ -354,11 +351,12 @@ class Fruit:
                 if distance < (fruit_radius + sword_width) or closest_dist_sq < (fruit_radius + sword_width)**2:
                     
                     fruit_object = Fruit.fruits[fruit["type"]]
-                    print()
                     
-                    if fruit["type"] != 4 and Sword.current_strength < fruit_object["hardness"] and not fruit["failed_slice"]:
+                    if fruit["type"] != 4 and Sword.current_strength < fruit_object["hardness"]:
                         
-                        # Fruit.active_fruits.remove(fruit)
+                        if fruit["failed_slice"]:
+                            return
+                        
                         fruit["failed_slice"] = True
                         
                         Sword.current_strength -= 15
@@ -371,7 +369,10 @@ class Fruit:
                                 game_over = True
                                 player_lie_down()
 
-                        continue
+                        Fruit.active_fruits.remove(fruit)
+                        Fruit.can_spawn = True
+                    
+                        return
                     
                     fruit["sliced"] = True
                     sliced = True
@@ -421,7 +422,7 @@ class Fruit:
     @staticmethod
     def draw_fruits():
         for fruit in Fruit.active_fruits:
-            if fruit["sliced"] == False:
+            if fruit["sliced"] == False and not fruit["failed_slice"]:
                 glPushMatrix()
                 glTranslatef(fruit["x"], fruit["y"], fruit["z"])
                 fruit_type = Fruit.fruits[fruit["type"]]
