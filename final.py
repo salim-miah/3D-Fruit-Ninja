@@ -27,7 +27,7 @@ missed_attempts = 0
 check_missed = False
 sliced = False
 pause = False
-fruit_change_rate = 5.0
+fruit_change_rate = 1.0
 fruit_change_increment = 5.0
 
 switch_message = ""  
@@ -175,10 +175,12 @@ class Fruit:
                 
                 angle_offset = random.choice([0, math.pi/2, -math.pi/2, math.pi/4, -math.pi/4])
                 
-                distance = random.uniform(Fruit.player_radius + 30, Fruit.sword_range)
+                # distance = random.uniform(Fruit.player_radius + 30, Fruit.sword_range)
                 
-                x = Player.global_x - math.sin(Player.angle_rad + angle_offset) * distance
-                y = Player.global_y + math.cos(Player.angle_rad + angle_offset) * distance
+                # x = Player.global_x - math.sin(Player.angle_rad + angle_offset) * distance
+                # y = Player.global_y + math.cos(Player.angle_rad + angle_offset) * distance
+                x = random.randint(0, ENTIRE_GRID_LENGTH)
+                y = random.randint(0, ENTIRE_GRID_LENGTH)
                 z = -50
                 
                 dist_to_player = math.sqrt((x - Player.global_x)**2 + (y - Player.global_y)**2)
