@@ -490,34 +490,15 @@ def keyboardListener(key, x, y):
     # Rotate gun left (A key)
     if key == b'a':
         Player.global_angle+=20
-        Player.angle_rad = math.radians(Player.global_angle)
-        Player.cam_x = Player.global_x 
-        if (Player.global_angle%360 >= 90 and Player.global_angle%360 <= 270) or (Player.global_angle%360 >= -90 and Player.global_angle%360 <= -270):
-            Player.cam_y = Player.global_y - 20
-        else:
-            Player.cam_y = Player.global_y + 20
 
-        Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
-        Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
-        Player.center_z = Player.cam_z  
     # Rotate gun right (D key)
     if key == b'd':
-        Player.global_angle-=20
-        Player.angle_rad = math.radians(Player.global_angle)
-        Player.cam_x = Player.global_x
-        if (Player.global_angle%360 >= 90 and Player.global_angle%360 <= 270) or (Player.global_angle%360 >= -90 and Player.global_angle%360 <= -270):
-            Player.cam_y = Player.global_y - 20
-        else:
-            Player.cam_y = Player.global_y + 20 
-
-        Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
-        Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
-        Player.center_z = Player.cam_z  
-    
+        Player.global_angle-=20   
     
     pd = math.radians( (Player.global_angle + 90) % 360)
     pdx = math.cos(pd)
     pdy = math.sin(pd)
+    
     print("global angle: ", (Player.global_angle + 0) % 360)
     print("pdx: ", pdx)
     print("pdy: ", pdy)
@@ -533,10 +514,22 @@ def keyboardListener(key, x, y):
     if key == b's':
         Player.global_x = Player.global_x - (pdx * Player.movement_rate)
         Player.global_y = Player.global_y - (pdy * Player.movement_rate)
+    
     Player.global_x = min(Player.global_x, ENTIRE_GRID_LENGTH)
     Player.global_y = min(Player.global_y, ENTIRE_GRID_LENGTH)
     Player.global_x = max(Player.global_x, -ENTIRE_GRID_LENGTH)
     Player.global_y = max(Player.global_y, -ENTIRE_GRID_LENGTH)
+    
+    Player.angle_rad = math.radians(Player.global_angle)
+    Player.cam_x = Player.global_x
+    if (Player.global_angle%360 >= 90 and Player.global_angle%360 <= 270) or (Player.global_angle%360 >= -90 and Player.global_angle%360 <= -270):
+        Player.cam_y = Player.global_y - 20
+    else:
+        Player.cam_y = Player.global_y + 20 
+
+    Player.center_x = Player.cam_x - math.sin(Player.angle_rad) * 100  
+    Player.center_y = Player.cam_y + math.cos(Player.angle_rad) * 100  
+    Player.center_z = Player.cam_z
 
     #To change costumes
     if key == b'c':
