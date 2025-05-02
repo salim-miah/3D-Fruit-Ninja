@@ -26,6 +26,7 @@ game_score = 0
 missed_attempts = 0
 check_missed = False
 sliced = False
+pause = False
 
 switch_message = ""  
 message_timer = 0 
@@ -513,7 +514,7 @@ def keyboardListener(key, x, y):
     """
     Handles keyboard inputs for player movement, gun rotation, camera updates, and cheat mode toggles.
     """
-    global game_score, first_person, camera_pos, thrid_person_camera_pos, camera_change_rate
+    global game_score, first_person, camera_pos, thrid_person_camera_pos, camera_change_rate, pause
     
     # Rotate gun left (A key)
     if key == b'a':
@@ -564,6 +565,13 @@ def keyboardListener(key, x, y):
             draw_text(400, 400, message, GLUT_BITMAP_HELVETICA_18)
         else:
             print(message)  
+    if key == b'p':
+        pause = not pause  # Toggle the pause state
+        if pause:
+            print("Game Paused")
+        else:
+            print("Game Resumed")
+
     if not first_person:
         x, y, z = thrid_person_camera_pos
 
@@ -657,9 +665,12 @@ def setupCamera():
 
 
 def idle():
-    global game_score, game_over
+    global game_score, game_over, pause
     
     if game_over:
+        return
+    
+    if pause:
         return
     
     
