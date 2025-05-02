@@ -605,7 +605,7 @@ def setupCamera():
                   0, 0, 1)  # The up-vector (positive Z-axis) is aligned with the world up
     else:
         # Extract camera position and look-at target
-        x, y, z = thrid_person_camera_pos
+        x, y, z = camera_pos
         # Position the camera and set its orientation
         gluLookAt(x, y, z,  # Camera position
                 0, 0, 0,  # Look-at target
