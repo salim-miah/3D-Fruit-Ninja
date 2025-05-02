@@ -468,7 +468,7 @@ class Fruit:
                     glPopMatrix()
 
 def draw_indicators():
-    if not first_person:
+    if first_person == False:
         return
     
     if left_indicator == True or right_indicator == True:
