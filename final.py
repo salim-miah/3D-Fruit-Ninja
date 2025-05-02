@@ -7,6 +7,8 @@ import time
 
 # Camera-related variables
 camera_pos = (0,500,500)
+thrid_person_camera_pos = (0,-500,500)
+camera_change_rate = 5
 
 fovY = 120  # Field of view
 GRID_LENGTH = 92  # Length of grid lines
@@ -481,7 +483,8 @@ def keyboardListener(key, x, y):
     """
     Handles keyboard inputs for player movement, gun rotation, camera updates, and cheat mode toggles.
     """
-    global game_score
+    global game_score, first_person, camera_pos, thrid_person_camera_pos, camera_change_rate
+    
     # Rotate gun left (A key)
     if key == b'a':
         Player.global_angle+=20
@@ -520,32 +523,53 @@ def keyboardListener(key, x, y):
             draw_text(400, 400, message, GLUT_BITMAP_HELVETICA_18)
         else:
             print(message)  
+    if not first_person:
+        x, y, z = thrid_person_camera_pos
 
+        # moving camera front
+        if key == b'k':
+            if not first_person:
+                y += camera_change_rate
+
+        # moving camera back
+        if key == b'l':
+            if not first_person:
+                y -= camera_change_rate
+
+        thrid_person_camera_pos = (x, y, z)
+        camera_pos = thrid_person_camera_pos
 
 
 def specialKeyListener(key, x, y):
     """
     Handles special key inputs (arrow keys) for adjusting the camera angle and height.
     """
-    global camera_pos
+    
+    global camera_pos, thrid_person_camera_pos
+    
     x, y, z = camera_pos
+    
+    if not first_person:
+        x, y, z = thrid_person_camera_pos
+    
     # Move camera up (UP arrow key)
     if key == GLUT_KEY_UP:
-         z += 5
+         z += camera_change_rate
 
     # Move camera down (DOWN arrow key)
     if key == GLUT_KEY_DOWN:
-        z -= 5
+        z -= camera_change_rate
     # moving camera left (LEFT arrow key)
     if key == GLUT_KEY_LEFT:
-        x -= 5  # Small angle decrement for smooth movement
+        x -= camera_change_rate  # Small angle decrement for smooth movement
 
     # moving camera right (RIGHT arrow key)
     if key == GLUT_KEY_RIGHT:
-        x += 5 # Small angle increment for smooth movement
+        x += camera_change_rate # Small angle increment for smooth movement
 
+    if not first_person:
+        thrid_person_camera_pos = (x, y, z)
     camera_pos = (x, y, z)
-
 
 def mouseListener(button, state, x, y):
     global first_person
@@ -561,7 +585,7 @@ def mouseListener(button, state, x, y):
 
 
 def setupCamera():
-    global first_person
+    global first_person, thrid_person_camera_pos
     glMatrixMode(GL_PROJECTION)  # Switch to projection matrix mode
     glLoadIdentity()  # Reset the projection matrix
     # Set up a perspective projection (field of view, aspect ratio, near clip, far clip)
@@ -581,7 +605,7 @@ def setupCamera():
                   0, 0, 1)  # The up-vector (positive Z-axis) is aligned with the world up
     else:
         # Extract camera position and look-at target
-        x, y, z = camera_pos
+        x, y, z = thrid_person_camera_pos
         # Position the camera and set its orientation
         gluLookAt(x, y, z,  # Camera position
                 0, 0, 0,  # Look-at target
