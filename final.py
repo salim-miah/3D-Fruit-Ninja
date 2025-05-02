@@ -635,75 +635,94 @@ def draw_grid():
     y = -600
     x = 600
     count = 0
-    for j in range(1,14):
-        for i in range(1,14):
-            if i%13 == 0:
-                if count%2 == 0:
-                        glBegin(GL_QUAD_STRIP)
-                        glColor3f(1, 1, 1)
-                        glVertex3f(x, y, 0)
-                        glVertex3f(x, y+GRID_LENGTH, 0)
-                        glVertex3f(x-GRID_LENGTH, y, 0)
-                        glVertex3f(x-GRID_LENGTH, y+GRID_LENGTH, 0)
-                        glEnd()
+    for j in range(1, 14):
+        for i in range(1, 14):
+            if i % 13 == 0:
+                if count % 2 == 0:
+                    glBegin(GL_QUAD_STRIP)
+                    glColor3f(0.8, 0.7, 0.5)  # Tatami mat color (light beige)
+                    glVertex3f(x, y, 0)
+                    glVertex3f(x, y + GRID_LENGTH, 0)
+                    glVertex3f(x - GRID_LENGTH, y, 0)
+                    glVertex3f(x - GRID_LENGTH, y + GRID_LENGTH, 0)
+                    glEnd()
                 else:
-                        glBegin(GL_QUAD_STRIP)
-                        glColor3f(0.7, 0.5, 0.95)
-                        glVertex3f(x, y, 0)
-                        glVertex3f(x, y+GRID_LENGTH, 0)
-                        glVertex3f(x-GRID_LENGTH, y, 0)
-                        glVertex3f(x-GRID_LENGTH, y+GRID_LENGTH, 0)
-                        glEnd()
+                    glBegin(GL_QUAD_STRIP)
+                    glColor3f(0.7, 0.6, 0.4)  # Slightly darker beige for alternating pattern
+                    glVertex3f(x, y, 0)
+                    glVertex3f(x, y + GRID_LENGTH, 0)
+                    glVertex3f(x - GRID_LENGTH, y, 0)
+                    glVertex3f(x - GRID_LENGTH, y + GRID_LENGTH, 0)
+                    glEnd()
                 x = 600
                 y += GRID_LENGTH
-                count+=1
+                count += 1
             else:
-                if count%2 == 0:
-                        glBegin(GL_QUAD_STRIP)
-                        glColor3f(1, 1, 1)
-                        glVertex3f(x, y, 0)
-                        glVertex3f(x, y+GRID_LENGTH, 0)
-                        glVertex3f(x-GRID_LENGTH, y, 0)
-                        glVertex3f(x-GRID_LENGTH, y+GRID_LENGTH, 0)
-                        glEnd()
+                if count % 2 == 0:
+                    glBegin(GL_QUAD_STRIP)
+                    glColor3f(0.8, 0.7, 0.5)  # Tatami mat color
+                    glVertex3f(x, y, 0)
+                    glVertex3f(x, y + GRID_LENGTH, 0)
+                    glVertex3f(x - GRID_LENGTH, y, 0)
+                    glVertex3f(x - GRID_LENGTH, y + GRID_LENGTH, 0)
+                    glEnd()
                 else:
-                        glBegin(GL_QUAD_STRIP)
-                        glColor3f(0.7, 0.5, 0.95)
-                        glVertex3f(x, y, 0)
-                        glVertex3f(x, y+GRID_LENGTH, 0)
-                        glVertex3f(x-GRID_LENGTH, y, 0)
-                        glVertex3f(x-GRID_LENGTH, y+GRID_LENGTH, 0)
-                        glEnd()
-                x-=GRID_LENGTH
-                count+=1
+                    glBegin(GL_QUAD_STRIP)
+                    glColor3f(0.7, 0.6, 0.4)  # Alternating pattern
+                    glVertex3f(x, y, 0)
+                    glVertex3f(x, y + GRID_LENGTH, 0)
+                    glVertex3f(x - GRID_LENGTH, y, 0)
+                    glVertex3f(x - GRID_LENGTH, y + GRID_LENGTH, 0)
+                    glEnd()
+                x -= GRID_LENGTH
+                count += 1
         
 def draw_walls():
+    # Front wall (Shoji screen)
     glBegin(GL_QUAD_STRIP)
-    glColor3f(0, 0, 1)
+    glColor3f(0.9, 0.9, 0.9)  # Shoji screen base color (white)
     glVertex3f(600, -600, 0)
     glVertex3f(600, -600, 100)
     glVertex3f(600, 596, 0)
     glVertex3f(600, 596, 100)
     glEnd()
 
-    glBegin(GL_QUAD_STRIP)
-    glColor3f(0.5, 1, 1)
-    glVertex3f(600, -600, 0)
-    glVertex3f(600, -600, 100)
-    glVertex3f(-596, -600, 0)
-    glVertex3f(-596, -600, 100)
-    glEnd()
+    # Shoji screen grid lines
+    for i in range(-600, 600, 100):
+        glBegin(GL_LINES)
+        glColor3f(0.5, 0.3, 0.1)  # Wooden frame color (brown)
+        glVertex3f(600, i, 0)
+        glVertex3f(600, i, 100)
+        glEnd()
 
+    for i in range(0, 100, 10):
+        glBegin(GL_LINES)
+        glColor3f(0.5, 0.3, 0.1)  # Wooden frame color
+        glVertex3f(600, -600, i)
+        glVertex3f(600, 600, i)
+        glEnd()
+
+    # Left wall
     glBegin(GL_QUAD_STRIP)
-    glColor3f(0, 1, 0)
+    glColor3f(0.5, 0.3, 0.1)  # Wooden wall color
     glVertex3f(-596, -600, 0)
     glVertex3f(-596, -600, 100)
     glVertex3f(-596, 596, 0)
     glVertex3f(-596, 596, 100)
     glEnd()
 
+    # Right wall
     glBegin(GL_QUAD_STRIP)
-    glColor3f(1, 1, 1)
+    glColor3f(0.5, 0.3, 0.1)  # Wooden wall color
+    glVertex3f(600, -600, 0)
+    glVertex3f(600, -600, 100)
+    glVertex3f(600, 596, 0)
+    glVertex3f(600, 596, 100)
+    glEnd()
+
+    # Back wall
+    glBegin(GL_QUAD_STRIP)
+    glColor3f(0.9, 0.9, 0.9)  # Shoji screen base color
     glVertex3f(-596, 596, 0)
     glVertex3f(-596, 596, 100)
     glVertex3f(600, 596, 0)
